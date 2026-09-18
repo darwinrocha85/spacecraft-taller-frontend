@@ -1,13 +1,5 @@
 {
-  "projects": {},
-  "targets": {
-    "spacecraft-system": {
-      "hosting": {
-        "taller": [
-          "spacecraft-taller"
-        ]
-      }
-    }
-  },
-  "etags": {}
+  "projects": {
+    "default": "spacecraft-taller-frontend"
+  }
 }
