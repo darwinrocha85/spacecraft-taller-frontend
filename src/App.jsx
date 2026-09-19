@@ -5,6 +5,7 @@ import RepairHistoryModal from './components/RepairHistoryModal'
 import WorkshopHistory from './components/WorkshopHistory'
 import PartsStockPanel from './components/PartsStockPanel'
 import Toast from './components/Toast'
+import TallerAssistantWidget from './components/TallerAssistantWidget'
 import { IconToolbox, IconAlert, IconWrench, IconClock } from './components/icons'
 import useShopRepairs from './hooks/useShopRepairs'
 
@@ -99,6 +100,8 @@ export default function App() {
       />
 
       <PartsStockPanel open={showParts} onClose={() => setShowParts(false)} />
+
+      <TallerAssistantWidget />
     </div>
   )
 }
