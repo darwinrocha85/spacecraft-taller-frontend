@@ -11,15 +11,15 @@ import { useState, useRef, useEffect } from 'react'
 // desactivar un repuesto es reversible) — así que este widget no necesita ningún flujo de
 // confirmación de dos turnos, solo mostrar la respuesta.
 //
-// `spacecraft-taller-frontend` es su propio proyecto de Hosting, sin las Cloud Functions
-// propias (esas viven en el proyecto `spacecraft-system`, junto con `askAdmin` y el servidor
-// MCP) — por eso en producción se pega directo a la URL pública de la Function en vez de un
-// rewrite de Hosting como usa el panel admin (`/api/ask-admin`).
+// `spacecraft-mcp` es el proyecto de Cloud Functions del MCP + asistentes (ver AGENTS.md
+// ahí): este widget pega directo a su URL pública (sin rewrite de Hosting), igual que el
+// widget del panel admin.
 
 const SUGGESTIONS = [
   '¿Qué naves están en el taller ahora?',
   '¿Qué repuestos tenemos en stock?',
   '¿Hay presupuestos pendientes de aprobación?',
+  'Se ve una abolladura grande en el casco, armá un borrador de presupuesto',
 ]
 
 // Igual criterio que AdminAssistantWidget: tope de mensajes previos mandados como historial
@@ -29,11 +29,55 @@ const MAX_HISTORY_MESSAGES = 12
 
 function getApiUrl() {
   if (import.meta.env.DEV) {
-    return 'http://localhost:5001/spacecraft-system/us-central1/askTaller'
+    return 'http://localhost:5001/spacecraft-mcp/us-central1/askTaller'
   }
   // Sin rewrite de Hosting en este proyecto: URL pública directa de la Cloud Function
-  // (2nd gen, alias cloudfunctions.net) en el proyecto spacecraft-system.
-  return 'https://us-central1-spacecraft-system.cloudfunctions.net/askTaller'
+  // (2nd gen, alias cloudfunctions.net) en el proyecto `spacecraft-mcp`.
+  return 'https://us-central1-spacecraft-mcp.cloudfunctions.net/askTaller'
+}
+
+// Tarjeta del borrador de presupuesto (Fase 1, ver claude/phase_1.md). `draft` es el payload
+// tal cual lo devuelve la tool draft_budget_from_damage_description: líneas ya resueltas por
+// matching de texto (exacto/fuzzy) + descripciones que necesitaron el criterio del modelo.
+function BudgetDraftCard({ draft }) {
+  if (!draft) return null
+  const money = (n) => `${Number(n).toFixed(2)} €`
+  return (
+    <div className="budget-draft-card">
+      <div className="budget-draft-title">Borrador de presupuesto (no creado todavía)</div>
+      {draft.lines?.length > 0 && (
+        <table className="budget-draft-table">
+          <tbody>
+            {draft.lines.map((line, i) => (
+              <tr key={i}>
+                <td className="budget-draft-desc">
+                  {line.sparePartName}
+                  <span className="budget-draft-method">{line.matchMethod === 'exact' ? 'match exacto' : 'match aproximado'}</span>
+                </td>
+                <td className="budget-draft-qty">×{line.quantity}</td>
+                <td className="budget-draft-amount">{money(line.subtotal)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+      {draft.unresolved?.length > 0 && (
+        <div className="budget-draft-unresolved">
+          <strong>Necesita tu criterio:</strong>
+          <ul>
+            {draft.unresolved.map((u, i) => (
+              <li key={i}>{u.description}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+      {draft.lines?.length > 0 && (
+        <div className="budget-draft-total">
+          Total (líneas resueltas): <strong>{money(draft.totalAmount)}</strong>
+        </div>
+      )}
+    </div>
+  )
 }
 
 export default function TallerAssistantWidget() {
@@ -43,7 +87,7 @@ export default function TallerAssistantWidget() {
   const [messages, setMessages] = useState([
     {
       role: 'assistant',
-      text: 'Hola — soy el asistente del taller. Puedo consultar qué naves están en reparación y en qué estado, armar presupuestos con el stock de repuestos, y ayudarte a mantener ese stock. La primera consulta puede tardar hasta un minuto si el backend estaba inactivo (arranque en frío de Render).',
+      text: 'Hola — soy el asistente del taller. Puedo consultar qué naves están en reparación y en qué estado, armar presupuestos con el stock de repuestos, y ayudarte a mantener ese stock. También podés describirme un daño con tus palabras (por ejemplo "hay una abolladura en el casco") y te armo un borrador de presupuesto. La primera consulta puede tardar hasta un minuto si el backend estaba inactivo (arranque en frío de Render).',
     },
   ])
   const listRef = useRef(null)
@@ -71,7 +115,13 @@ export default function TallerAssistantWidget() {
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'Error')
-      setMessages((m) => [...m, { role: 'assistant', text: data.answer }])
+      // Fase 1 (borrador de presupuesto desde texto libre, ver claude/phase_1.md del proyecto
+      // "taller"): además del texto de siempre, la respuesta puede traer `structured` cuando el
+      // asistente usó la tool draft_budget_from_damage_description — se guarda aparte como
+      // `draft` del mensaje para poder pintar la tarjeta, en vez de que el usuario dependa de
+      // que el modelo transcriba bien los números en prosa.
+      const draft = data.structured?.type === 'budget_draft' ? data.structured.payload : null
+      setMessages((m) => [...m, { role: 'assistant', text: data.answer, draft }])
     } catch (err) {
       setMessages((m) => [
         ...m,
@@ -119,6 +169,7 @@ export default function TallerAssistantWidget() {
             {messages.map((msg, i) => (
               <div key={i} className={`assistant-msg ${msg.role}`}>
                 {msg.text}
+                {msg.draft && <BudgetDraftCard draft={msg.draft} />}
               </div>
             ))}
             {loading && <div className="assistant-msg assistant">Consultando datos en vivo…</div>}

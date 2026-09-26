@@ -1030,6 +1030,77 @@ body {
   color: var(--text-muted);
 }
 
+/* Tarjeta de borrador de presupuesto (Fase 1 del asistente, ver claude/phase_1.md) — vive
+   dentro de un .assistant-msg.assistant, mismo contenedor que el texto de la respuesta. */
+.budget-draft-card {
+  margin-top: 8px;
+  padding: 10px;
+  background: var(--bg-panel);
+  border: 1px solid var(--accent-dim);
+  border-radius: var(--radius-sm);
+  font-size: 12.5px;
+}
+
+.budget-draft-title {
+  font-weight: 600;
+  color: var(--accent);
+  margin-bottom: 6px;
+  font-size: 11.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.budget-draft-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.budget-draft-table td {
+  padding: 4px 0;
+  border-bottom: 1px solid var(--border-soft);
+  vertical-align: top;
+}
+
+.budget-draft-desc {
+  display: flex;
+  flex-direction: column;
+}
+
+.budget-draft-method {
+  font-size: 10.5px;
+  color: var(--text-muted);
+}
+
+.budget-draft-qty {
+  text-align: center;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.budget-draft-amount {
+  text-align: right;
+  white-space: nowrap;
+  font-weight: 500;
+}
+
+.budget-draft-unresolved {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px dashed var(--border-soft);
+}
+
+.budget-draft-unresolved ul {
+  margin: 4px 0 0;
+  padding-left: 18px;
+}
+
+.budget-draft-total {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border-soft);
+  text-align: right;
+}
+
 @media (max-width: 480px) {
   .assistant-panel {
     right: 16px;
