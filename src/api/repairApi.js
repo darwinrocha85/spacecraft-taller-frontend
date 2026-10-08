@@ -24,6 +24,20 @@ const tallerClient = axios.create({
   headers: { 'Content-Type': 'application/json' },
 })
 
+// Un solo back / un solo deploy, dos bloques lógicos (ver backend app/main.py):
+// - Taller (fabricación): canónico /api/workshop/*
+// - Almacén (stock): canónico /api/inventory/*
+// Misma BASE_URL (VITE_TALLER_API_URL), distinto prefijo. Sin hardcodear hosts.
+const workshopClient = axios.create({
+  baseURL: `${TALLER_API_URL}/workshop`,
+  headers: { 'Content-Type': 'application/json' },
+})
+
+const inventoryClient = axios.create({
+  baseURL: `${TALLER_API_URL}/inventory`,
+  headers: { 'Content-Type': 'application/json' },
+})
+
 function toFriendlyError(error, apiUrl) {
   if (error.response) {
     // Java devuelve {"message": ...}, el backend de taller (Python/FastAPI) devuelve
@@ -53,7 +67,7 @@ export const repairApi = {
   // --- Catálogo de daños (taller) ---
   async getDamageCatalog() {
     try {
-      const { data } = await tallerClient.get('/catalog/damages')
+      const { data } = await workshopClient.get('/catalog/damages')
       return data
     } catch (error) {
       throw toFriendlyError(error, TALLER_API_URL)
@@ -63,7 +77,7 @@ export const repairApi = {
   // --- Reparaciones (taller) ---
   async getShopRepairs(status) {
     try {
-      const { data } = await tallerClient.get('/repairs', { params: status ? { status } : {} })
+      const { data } = await workshopClient.get('/repairs', { params: status ? { status } : {} })
       return data
     } catch (error) {
       throw toFriendlyError(error, TALLER_API_URL)
@@ -72,7 +86,7 @@ export const repairApi = {
 
   async getRepairsForSpacecraft(spacecraftId) {
     try {
-      const { data } = await tallerClient.get('/repairs', { params: { spacecraftId } })
+      const { data } = await workshopClient.get('/repairs', { params: { spacecraftId } })
       return data
     } catch (error) {
       throw toFriendlyError(error, TALLER_API_URL)
@@ -81,7 +95,7 @@ export const repairApi = {
 
   async getRepairDetail(repairId) {
     try {
-      const { data } = await tallerClient.get(`/repairs/${repairId}`)
+      const { data } = await workshopClient.get(`/repairs/${repairId}`)
       return data
     } catch (error) {
       throw toFriendlyError(error, TALLER_API_URL)
@@ -90,7 +104,7 @@ export const repairApi = {
 
   async confirmReceipt(repairId) {
     try {
-      const { data } = await tallerClient.post(`/repairs/${repairId}/confirm-receipt`)
+      const { data } = await workshopClient.post(`/repairs/${repairId}/confirm-receipt`)
       return data
     } catch (error) {
       throw toFriendlyError(error, TALLER_API_URL)
@@ -99,7 +113,7 @@ export const repairApi = {
 
   async advanceStatus(repairId, status) {
     try {
-      const { data } = await tallerClient.patch(`/repairs/${repairId}/status`, { status })
+      const { data } = await workshopClient.patch(`/repairs/${repairId}/status`, { status })
       return data
     } catch (error) {
       throw toFriendlyError(error, TALLER_API_URL)
@@ -109,7 +123,7 @@ export const repairApi = {
   // --- Presupuestos (taller) ---
   async getBudgets(repairId) {
     try {
-      const { data } = await tallerClient.get(`/repairs/${repairId}/budgets`)
+      const { data } = await workshopClient.get(`/repairs/${repairId}/budgets`)
       return data
     } catch (error) {
       throw toFriendlyError(error, TALLER_API_URL)
@@ -118,17 +132,17 @@ export const repairApi = {
 
   async createBudget(repairId, items) {
     try {
-      const { data } = await tallerClient.post(`/repairs/${repairId}/budgets`, { items })
+      const { data } = await workshopClient.post(`/repairs/${repairId}/budgets`, { items })
       return data
     } catch (error) {
       throw toFriendlyError(error, TALLER_API_URL)
     }
   },
 
-  // --- Stock de repuestos (taller) ---
+  // --- Stock de repuestos (almacén: ficha producto) ---
   async getSpareParts(activeOnly = true) {
     try {
-      const { data } = await tallerClient.get('/parts', { params: { active: activeOnly } })
+      const { data } = await inventoryClient.get('/parts', { params: { active: activeOnly } })
       return data
     } catch (error) {
       throw toFriendlyError(error, TALLER_API_URL)
@@ -137,7 +151,7 @@ export const repairApi = {
 
   async createSparePart(part) {
     try {
-      const { data } = await tallerClient.post('/parts', part)
+      const { data } = await inventoryClient.post('/parts', part)
       return data
     } catch (error) {
       throw toFriendlyError(error, TALLER_API_URL)
@@ -146,7 +160,7 @@ export const repairApi = {
 
   async updateSparePart(partId, changes) {
     try {
-      const { data } = await tallerClient.patch(`/parts/${partId}`, changes)
+      const { data } = await inventoryClient.patch(`/parts/${partId}`, changes)
       return data
     } catch (error) {
       throw toFriendlyError(error, TALLER_API_URL)
@@ -155,7 +169,35 @@ export const repairApi = {
 
   async deactivateSparePart(partId) {
     try {
-      const { data } = await tallerClient.delete(`/parts/${partId}`)
+      const { data } = await inventoryClient.delete(`/parts/${partId}`)
+      return data
+    } catch (error) {
+      throw toFriendlyError(error, TALLER_API_URL)
+    }
+  },
+
+  // --- Almacén demo multi-ubicación (solo lectura, sin migraciones) ---
+  async getWarehouses() {
+    try {
+      const { data } = await inventoryClient.get('/warehouses')
+      return data
+    } catch (error) {
+      throw toFriendlyError(error, TALLER_API_URL)
+    }
+  },
+
+  async getQuants() {
+    try {
+      const { data } = await inventoryClient.get('/quants')
+      return data
+    } catch (error) {
+      throw toFriendlyError(error, TALLER_API_URL)
+    }
+  },
+
+  async getInventoryOverview() {
+    try {
+      const { data } = await inventoryClient.get('/overview')
       return data
     } catch (error) {
       throw toFriendlyError(error, TALLER_API_URL)

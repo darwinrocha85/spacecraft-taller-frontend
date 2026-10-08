@@ -3,6 +3,7 @@ import Header from './components/Header'
 import RepairCard from './components/RepairCard'
 import RepairHistoryModal from './components/RepairHistoryModal'
 import WorkshopHistory from './components/WorkshopHistory'
+import InventoryPanel from './components/InventoryPanel'
 import PartsStockPanel from './components/PartsStockPanel'
 import Toast from './components/Toast'
 import TallerAssistantWidget from './components/TallerAssistantWidget'
@@ -12,8 +13,11 @@ import useShopRepairs from './hooks/useShopRepairs'
 export default function App() {
   const { all: repairs, loading, error, refetch } = useShopRepairs()
   const [historyTarget, setHistoryTarget] = useState(null)
-  const [showParts, setShowParts] = useState(false)
   const [toast, setToast] = useState(null)
+  // Un solo back / dos bloques: misma BASE_URL, prefijo /workshop vs /inventory.
+  const [view, setView] = useState('taller')
+  // Recarga existencias cuando el alta/edición inline toca el stock.
+  const [inventoryTick, setInventoryTick] = useState(0)
 
   const activeRepairs = repairs.filter((r) => r.status !== 'ENTREGADA')
   const historyRepairs = repairs
@@ -34,9 +38,21 @@ export default function App() {
         <Header inTallerCount={activeRepairs.length} />
 
         <div className="taller-toolbar">
-          <button type="button" className="btn btn-ghost" onClick={() => setShowParts(true)}>
+          <button
+            type="button"
+            className={`btn ${view === 'taller' ? 'btn-primary' : 'btn-ghost'}`}
+            onClick={() => setView('taller')}
+          >
+            <IconWrench />
+            Taller
+          </button>
+          <button
+            type="button"
+            className={`btn ${view === 'almacen' ? 'btn-primary' : 'btn-ghost'}`}
+            onClick={() => setView('almacen')}
+          >
             <IconToolbox />
-            Stock de repuestos
+            Almacén
           </button>
         </div>
 
@@ -54,7 +70,7 @@ export default function App() {
           </div>
         )}
 
-        {!loading && (
+        {!loading && view === 'taller' && (
           <>
             <section className="taller-section">
               <h2 className="section-title">
@@ -89,6 +105,29 @@ export default function App() {
             </section>
           </>
         )}
+
+        {view === 'almacen' && (
+          <>
+            <section className="taller-section">
+              <h2 className="section-title">
+                <IconToolbox />
+                Almacén multi-ubicación
+              </h2>
+              <InventoryPanel refreshKey={inventoryTick} />
+            </section>
+
+            <section className="taller-section">
+              <h2 className="section-title">
+                <IconToolbox />
+                Gestión de repuestos
+              </h2>
+              <PartsStockPanel
+                refreshKey={inventoryTick}
+                onChanged={() => setInventoryTick((t) => t + 1)}
+              />
+            </section>
+          </>
+        )}
       </main>
 
       <Toast message={toast?.message} type={toast?.type} onClose={() => setToast(null)} />
@@ -98,8 +137,6 @@ export default function App() {
         spacecraft={historyTarget}
         onClose={() => setHistoryTarget(null)}
       />
-
-      <PartsStockPanel open={showParts} onClose={() => setShowParts(false)} />
 
       <TallerAssistantWidget />
     </div>
