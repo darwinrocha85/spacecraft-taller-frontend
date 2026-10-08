@@ -739,6 +739,7 @@ body {
 }
 
 .spare-part-form input,
+.spare-part-form select,
 .budget-part-qty {
   padding: 9px 12px;
   border-radius: var(--radius-sm);
@@ -750,6 +751,7 @@ body {
 }
 
 .spare-part-form input:focus,
+.spare-part-form select:focus,
 .budget-part-qty:focus {
   outline: none;
   border-color: var(--accent);
@@ -758,6 +760,36 @@ body {
 .spare-part-form input {
   flex: 1 1 160px;
   min-width: 0;
+}
+
+.spare-part-form select {
+  flex: 1 1 200px;
+  min-width: 0;
+  cursor: pointer;
+}
+
+/* Filtro de almacén sobre la tabla de existencias: mismo campo que el formulario */
+.table-wrapper .taller-toolbar {
+  justify-content: flex-start;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.table-wrapper .taller-toolbar select {
+  padding: 9px 12px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-soft);
+  background: var(--bg-panel);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  font-size: 0.88rem;
+  cursor: pointer;
+}
+
+.table-wrapper .taller-toolbar select:focus {
+  outline: none;
+  border-color: var(--accent);
 }
 
 /* Budget builder */
@@ -833,6 +865,10 @@ body {
   }
 
   .spare-part-form input {
+    flex: 1 1 auto;
+  }
+
+  .spare-part-form select {
     flex: 1 1 auto;
   }
 }

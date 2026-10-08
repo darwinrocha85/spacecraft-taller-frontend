@@ -93,8 +93,7 @@ export default function PartsStockPanel({ refreshKey = 0, onChanged }) {
       {notice && <p className="field-error">{notice}</p>}
       {lastCreated && (
         <p className="schedule-hint">
-          Alta de {lastCreated.name} registrada en {lastCreated.warehouse}. En existencias la verás
-          repartida 70/30 (BCN/WAW) hasta que el back persista stock por almacén.
+          Alta de {lastCreated.name} registrada en {lastCreated.warehouse}: el 100% queda ahí.
         </p>
       )}
 
@@ -149,7 +148,8 @@ export default function PartsStockPanel({ refreshKey = 0, onChanged }) {
               <tr>
                 <th>Nombre</th>
                 <th>Precio</th>
-                <th>Stock total</th>
+                <th>Disponible en {warehouse}</th>
+                <th>Total</th>
                 <th>Estado</th>
                 <th className="col-actions"></th>
               </tr>
@@ -159,6 +159,7 @@ export default function PartsStockPanel({ refreshKey = 0, onChanged }) {
                 <tr key={part.id}>
                   <td className="col-name">{part.name}</td>
                   <td>${part.price.toFixed(2)}</td>
+                  <td>{part.stockByWarehouse?.[warehouse] ?? '—'}</td>
                   <td>{part.stockQuantity ?? '—'}</td>
                   <td>{part.active ? 'Activo' : 'Inactivo'}</td>
                   <td className="col-actions">

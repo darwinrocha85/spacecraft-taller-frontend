@@ -2,12 +2,12 @@ import { useEffect, useState } from 'react'
 import repairApi from '../api/repairApi'
 
 // Bloque Almacén (mismo back, prefijo /api/inventory/*).
-// Existencias por almacén, solo lectura. El back deriva el reparto 70/30
-// del stock total hasta persistir stock por almacén (ver aviso en el alta).
+// Existencias reales por (repuesto, almacén), solo lectura.
 export default function InventoryPanel({ refreshKey = 0 }) {
   const [overview, setOverview] = useState(null)
   const [warehouses, setWarehouses] = useState([])
   const [quants, setQuants] = useState([])
+  const [filter, setFilter] = useState('TODOS')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(true)
 
@@ -42,12 +42,13 @@ export default function InventoryPanel({ refreshKey = 0 }) {
   if (loading) return <p className="schedule-hint">Cargando almacén…</p>
   if (error) return <p className="field-error">{error}</p>
 
+  const visibleQuants = filter === 'TODOS' ? quants : quants.filter((q) => q.warehouse === filter)
+
   return (
     <div>
       <p className="schedule-hint">
         {overview?.partsCount ?? 0} repuestos · almacenes {(overview?.warehouses ?? []).join(' + ')}
         {overview?.lowStock?.length > 0 && ` · stock bajo: ${overview.lowStock.join(', ')}`}
-        {' '}· reparto demo 70/30 del stock total.
       </p>
 
       <div className="table-wrapper">
@@ -70,6 +71,23 @@ export default function InventoryPanel({ refreshKey = 0 }) {
       </div>
 
       <div className="table-wrapper">
+        <div className="taller-toolbar">
+          <label className="schedule-hint" htmlFor="quant-warehouse-filter">
+            Ver almacén:
+          </label>
+          <select
+            id="quant-warehouse-filter"
+            value={filter}
+            onChange={(e) => setFilter(e.target.value)}
+          >
+            <option value="TODOS">Todos</option>
+            {warehouses.map((w) => (
+              <option key={w.code} value={w.code}>
+                {w.code} — {w.name}
+              </option>
+            ))}
+          </select>
+        </div>
         <table className="spacecraft-table">
           <thead>
             <tr>
@@ -79,7 +97,7 @@ export default function InventoryPanel({ refreshKey = 0 }) {
             </tr>
           </thead>
           <tbody>
-            {quants.map((q) => (
+            {visibleQuants.map((q) => (
               <tr key={`${q.sparePartId}-${q.warehouse}`}>
                 <td className="col-name">{q.sparePartName}</td>
                 <td>{q.warehouse}</td>
